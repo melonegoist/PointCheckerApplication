@@ -1,0 +1,877 @@
+import org.xml.sax.helpers.DefaultHandler
+import javax.tools.ToolProvider
+import javax.xml.parsers.SAXParserFactory
+import java.security.MessageDigest
+import groovy.xml.XmlSlurper
+
+
+
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.hidetake.ssh' version '2.11.2'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa:3.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-security:3.2.0'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    runtimeOnly 'org.postgresql:postgresql:42.7.2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
+    testImplementation 'org.seleniumhq.selenium:selenium-java:4.20.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+}
+
+
+
+group = 'ru.melon_egoist'
+version = '1.0'
+
+java.sourceCompatibility = JavaVersion.VERSION_17
+
+
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+def getRequiredProperty(String name) {
+    return project.findProperty("deploy.$name") ?:
+            System.getenv("DEPLOY_${name.toUpperCase()}")
+            throw new GradleException("Required property not specified: deploy.$name")
+}
+
+
+
+// ✅ task scp
+tasks.register('scp') {
+    group = 'Deployment'
+    description = 'Deploys JAR via SCP'
+
+    dependsOn tasks.named('myBuild')
+
+    doLast {
+        def remoteHost = getRequiredProperty('host')
+        def remoteUser = getRequiredProperty('user')
+        def remoteDir = getRequiredProperty('dir')
+        def sshKey = file("${System.getProperty('user.home')}/.ssh/id_rsa")
+
+        exec {
+            commandLine 'scp', '-i', sshKey.absolutePath,
+                    layout.buildDirectory.file("libs/${project.name}-${project.version}.jar").get().asFile.absolutePath,
+                    "$remoteUser@$remoteHost:~/$remoteDir/"
+        }
+
+        println("✅ Deploy via scp was done successfully!")
+    }
+}
+
+
+// ✅ task compile
+tasks.register('myCompile', JavaCompile) {
+    group = 'Build'
+    description = 'Another realisation of compile'
+
+    source = sourceSets.main.java
+    classpath = sourceSets.main.compileClasspath
+    destinationDirectory = file("$buildDir/my-classes")
+
+    sourceCompatibility = JavaVersion.VERSION_17.toString()
+    targetCompatibility = JavaVersion.VERSION_17.toString()
+
+    options.encoding = 'UTF-8'
+
+    doFirst {
+        println '===== Starting compilation ====='
+    }
+
+    doLast {
+        try {
+            def compiledFiles = fileTree(destinationDirectory).matching {
+                include '**/*.class'
+            }.files.size()
+
+            println "✅ Compilation success. Compiled files: $compiledFiles"
+
+        } catch (Exception e) {
+            throw new GradleException("Error during post-compilation step: ${e.message}")
+        }
+    }
+}
+
+//TODO: cache
+
+//✅ task music
+tasks.register('music') {
+    group = 'Notification'
+    description = 'Plays a success sound after build'
+
+    notCompatibleWithConfigurationCache("Music task doesn't support cache")
+
+    dependsOn myBuild
+
+    doFirst {
+        println "===== music starting ====="
+    }
+
+    doLast {
+        def soundFile = file("src/main/resources/success.wav")
+
+        if (!soundFile.exists()) {
+            println("Sound file not found: ${soundFile}")
+
+            return
+        }
+
+        def playCommand = null
+        def osName = System.getProperty("os.name").toLowerCase()
+
+        if (osName.contains("windows")) {
+            playCommand = ['powershell', '-c', "PlaySound('${soundFile.absolutePath}', 0)"]
+        } else if (osName.contains("mac")) {
+            playCommand = ['afplay', soundFile.absolutePath]
+        } else {
+            playCommand = ['paplay', soundFile.absolutePath]
+        }
+
+        try {
+            exec {
+                commandLine playCommand
+                workingDir projectDir
+                ignoreExitValue true
+            }
+        } catch (Exception e) {
+            throw new GradleException("Can't play music: ${e.message}")
+        }
+    }
+}
+
+tasks.register('generateChecksums') {
+    group = 'Documentation'
+    description = 'Generate MD5 and SHA1 for JAR file'
+
+    def jarFile = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar")
+    def outputFile = layout.buildDirectory.file("checksums/checksums.txt")
+
+    inputs.file(jarFile)
+    outputs.file(outputFile)
+
+    doLast {
+        def file = jarFile.get().asFile
+        def md5 = MessageDigest.getInstance("MD5").digest(file.bytes).encodeHex().toString()
+        def sha1 = MessageDigest.getInstance("SHA-1").digest(file.bytes).encodeHex().toString()
+
+        outputFile.get().asFile.withWriter { writer ->
+            writer.write("MD5: ${md5}\nSHA1: ${sha1}")
+        }
+    }
+}
+
+
+tasks.register('updateManifest', Jar) {
+    group = 'Documentation'
+    description = 'Update MANIFEST.MF with hash sums'
+
+    notCompatibleWithConfigurationCache("Uses external commands")
+
+    dependsOn tasks.named('jar'), tasks.named('generateChecksums')
+    archiveClassifier = 'updated'
+
+    from(zipTree(tasks.named('jar').get().archiveFile)) {
+        exclude 'META-INF/MANIFEST.MF'
+    }
+
+    doFirst {
+        def checksumFile = tasks.named('generateChecksums').get().outputs.files.singleFile
+        def lines = checksumFile.readLines()
+        def md5 = lines[0].split(': ')[1]
+        def sha1 = lines[1].split(': ')[1]
+
+        manifest {
+            attributes(
+                    'Implementation-Title': project.name,
+                    'Implementation-Version': project.version,
+                    'Created-By': "Gradle ${gradle.gradleVersion}",
+                    'MD5-Hash': md5,
+                    'SHA1-Hash': sha1
+            )
+        }
+    }
+}
+
+
+tasks.register('packageJavadoc', Zip) {
+    group = 'Documentation'
+    description = 'Packing Javadoc into a separate archive'
+
+    dependsOn tasks.named('javadoc')
+    archiveClassifier = 'javadoc'
+    from tasks.named('javadoc')
+}
+
+// ✅ task doc
+tasks.register('doc') {
+    group = 'Documentation'
+    description = 'Complete documentation generation process'
+
+    dependsOn tasks.named('updateManifest'), tasks.named('packageJavadoc')
+
+    doLast {
+        logger.lifecycle("""
+        ===== ✅Documentation successfully generated! =====
+        Main JAR: ${tasks.named('updateManifest').get().archiveFile.get()}
+        Documentation: ${tasks.named('packageJavadoc').get().archiveFile.get()}
+        """)
+    }
+}
+
+
+tasks.named('javadoc', Javadoc) {
+    options {
+        encoding = 'UTF-8'
+        addBooleanOption('html5', true)
+        addStringOption('Xdoclint:none', '-quiet')
+        links = [
+                'https://docs.oracle.com/en/java/javase/17/docs/api/',
+                'https://docs.spring.io/spring-framework/docs/current/javadoc-api/'
+        ]
+    }
+
+    exclude '**/internal/**'
+}
+
+// ✅ task xml
+tasks.register('xml') {
+    group = 'Verification'
+    description = 'Validates all XML files in the project'
+
+    def xmlFiles = layout.files(
+            fileTree(projectDir) {
+                include '**/*.xml'
+                exclude 'build/**'
+            }
+    )
+
+    inputs.files(xmlFiles)
+
+    doLast {
+        xmlFiles.each { file ->
+            try {
+                def factory = SAXParserFactory.newInstance()
+                factory.setValidating(true)
+                def parser = factory.newSAXParser()
+                parser.parse(file, new DefaultHandler())
+                logger.lifecycle("[VALID] ${file.name}")
+            } catch (Exception e) {
+                logger.error("[INVALID] ${file.name}: ${e.message}")
+                throw new GradleException("XML validation failed for ${file.name}")
+            }
+        }
+
+        println("Validating has been completed ✅")
+    }
+}
+
+// ✅ task build
+tasks.register('myBuild', Jar) {
+    group = 'Build'
+    description = 'Creating an executable JAR'
+
+    dependsOn tasks.named('myCompile')
+
+    archiveBaseName = project.name
+    archiveVersion = "${project.version}"
+
+    manifest {
+        attributes(
+                'Main-Class': 'ru.melon_egoist.Backend',
+                'Created-By': 'Gradle Custom Build'
+        )
+    }
+
+    from "$buildDir/classes-custom"
+
+    from sourceSets.main.resources
+
+    doLast {
+        println "✅ JAR built: ${archiveFile.get().asFile.absolutePath}"
+    }
+}
+
+// ✅ task clean
+tasks.register('myClean') {
+    group = 'Build'
+    description = 'Removes all compiled classes and temporary files.'
+
+    notCompatibleWithConfigurationCache("Clean doesn't support cache configuration")
+
+    doFirst {
+        println('===== Start cleaning =====')
+    }
+
+    doLast {
+        def dirsToDelete = [
+                file("$buildDir"),
+                file("$projectDir/build/my-classes"),
+                file("$projectDir/build/classes-custom"),
+                file("$projectDir/build/checksums"),
+                file("$projectDir/build/sounds"),
+        ]
+
+        dirsToDelete.each { dir ->
+            if (dir.exists()) {
+                dir.deleteDir()
+                println "Catalog deleted: ${dir.absolutePath}"
+            }
+        }
+
+        println "✅ Clean completed"
+    }
+}
+
+// ✅ task alt
+tasks.register('alt') {
+    group = 'Build'
+    description = 'Creates an alternative version of the program with replacements and packaging in JAR'
+
+    notCompatibleWithConfigurationCache("alt doesn't support cache configuration")
+
+    dependsOn tasks.named('myBuild')
+
+    def altSrcDir = file("$buildDir/alt-src")
+    def altClassesDir = file("$buildDir/alt-classes")
+    def replacements = [
+            'AuthController': 'AltAuthController',
+            'JwtUtil'       : 'AltJwtUtil',
+            'authenticationManager'    : 'altAuthenticationManager',
+            'jwtTokenUtil': 'altJwtTokenUtil',
+            'createUser': 'altCreateUser',
+            'Backend': 'AltBackend'
+    ]
+
+    doFirst {
+        println "===== Making alt version ====="
+    }
+
+    doLast {
+        delete altSrcDir
+
+        copy {
+            from 'src/main/java'
+            into altSrcDir
+        }
+
+        fileTree(altSrcDir).matching { include '**/*.java' }.each { file ->
+            def text = file.text
+            replacements.each { from, to ->
+                text = text.replaceAll("\\b${from}\\b", to)
+            }
+            file.text = text
+        }
+
+        fileTree(altSrcDir).matching { include '**/*.java' }.each { file ->
+            def text = file.text
+            def matcher = text =~ /\bpublic\s+(class|interface|enum)\s+(\w+)/
+            if (matcher.find()) {
+                def className = matcher.group(2)
+                def expectedFileName = "${className}.java"
+                if (file.name != expectedFileName) {
+                    def renamed = new File(file.parentFile, expectedFileName)
+                    file.renameTo(renamed)
+                }
+            }
+        }
+
+        delete altClassesDir
+        altClassesDir.mkdirs()
+
+        def srcFiles = fileTree(altSrcDir).files.collect { it.absolutePath }
+        def classpathStr = sourceSets.main.compileClasspath.asPath
+
+        def compiler = ToolProvider.getSystemJavaCompiler()
+        if (!compiler) throw new GradleException("Java Compiler not found!")
+
+        def result = compiler.run(
+                null, null, null,
+                '-d', altClassesDir.absolutePath,
+                '-classpath', classpathStr,
+                '-source', '17',
+                '-target', '17',
+                '-encoding', 'UTF-8',
+                *srcFiles
+        )
+        if (result != 0) {
+            throw new GradleException("Error occurred during alt task!")
+        }
+
+        def jarFile = file("$buildDir/libs/${project.name}-${project.version}-alt.jar")
+        ant.jar(destfile: jarFile) {
+            fileset(dir: altClassesDir)
+            manifest {
+                attributes 'Main-Class':'ru.melon_egoist.AltBackend'
+            }
+        }
+
+        println "✅ Alt Jar built: ${jarFile.absolutePath}"
+    }
+}
+
+// task team
+tasks.register('team') {
+    group = 'Build'
+    description = 'Collects the previous two commits and archives their artifacts'
+
+    notCompatibleWithConfigurationCache("Uses git and temporary file changes")
+
+    doFirst {
+        println('===== Start building previous versions =====')
+    }
+
+    doLast {
+        def git = ['git']
+        def buildDirPath = "${project.buildDir}/team-builds"
+        def outputZip = file("${project.buildDir}/team-artifacts.zip")
+
+        def commits = git + ['rev-list', '--max-count=2', 'HEAD']
+        def revisions = new ByteArrayOutputStream()
+
+        exec {
+            commandLine commits
+            standardOutput = revisions
+        }
+        def commitHashes = revisions.toString().readLines()
+        println "Build revisions: $commitHashes"
+
+        def originalBranch = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-parse', '--abbrev-ref', 'HEAD'
+            standardOutput = originalBranch
+        }
+        def branchName = originalBranch.toString().trim()
+
+        def counter = 1
+        commitHashes.each { commit ->
+            println "Commit checkout $commit"
+            exec {
+                commandLine 'git', 'checkout', commit
+            }
+
+            println "Commit build $commit"
+            exec {
+                commandLine './gradlew', 'myClean', 'myBuild'
+            }
+
+            def jarFile = file("${project.buildDir}/libs/${project.name}-${project.version}.jar")
+            def destDir = file("${buildDirPath}/commit${counter}")
+            destDir.mkdirs()
+            copy {
+                from jarFile
+                into destDir
+                rename { "commit${counter}.jar" }
+            }
+
+            counter++
+        }
+
+        println "Return to origin branch $branchName"
+        exec {
+            commandLine 'git', 'checkout', branchName
+        }
+
+        println "Archive results"
+        ant.zip(destfile: outputZip) {
+            fileset(dir: buildDirPath)
+        }
+
+        println "✅ ZIP-file created: ${outputZip.absolutePath}"
+    }
+}
+
+// task native2ascii
+tasks.register('native2ascii') {
+    group = 'I18n'
+    description = 'Converting localization files to ASCII format'
+
+    def resourcesDir = file('src/main/resources')
+    def outputDir = file("$buildDir/native2ascii")
+
+    inputs.dir(resourcesDir)
+    outputs.dir(outputDir)
+
+    doLast {
+        println "Refactoring native2ascii..."
+
+        outputDir.mkdirs()
+
+        fileTree(resourcesDir).matching {
+            include '**/*.properties'
+        }.each { sourceFile ->
+            try {
+                def relativePath = resourcesDir.toURI().relativize(sourceFile.toURI()).getPath()
+                def targetFile = new File(outputDir, relativePath)
+
+                targetFile.parentFile.mkdirs()
+
+                String content = sourceFile.getText('UTF-8')
+
+                StringBuilder convertedContent = new StringBuilder()
+                for (int i = 0; i < content.length(); i++) {
+                    char c = content.charAt(i)
+                    if (c > 127) {
+                        convertedContent.append(String.format("\\u%04x", (int) c))
+                    } else {
+                        convertedContent.append(c)
+                    }
+                }
+
+                targetFile.setText(convertedContent.toString(), 'UTF-8')
+
+                println "Text has been refactored: ${relativePath}"
+            } catch (Exception e) {
+                throw new GradleException("Error with refactoring file ${sourceFile.name}", e)
+            }
+        }
+
+        println "✅Native2Ascii refactor has been done successfully! Result in ${outputDir}"
+    }
+}
+
+// task history
+tasks.register('history') {
+    group = 'Version Control'
+    description = 'Find last working version in git history'
+
+    def successFile = file("$buildDir/last-working-version.txt")
+    def diffFile = file("$buildDir/failing-changes.diff")
+
+    doLast {
+        println "Searching for a last working version..."
+
+        try {
+            def isGitRepo = file('.git').exists()
+            if (!isGitRepo) {
+                throw new GradleException("Current dir isn't a git repo")
+            }
+
+            def originalBranch = getCurrentGitBranch()
+            println "Current branch: $originalBranch"
+
+            def tempDir = file("$buildDir/git-history-check")
+            tempDir.mkdirs()
+
+            try {
+                def commits = getGitHistory()
+                if (commits.empty) {
+                    throw new GradleException("Git history wasn't found")
+                }
+
+                if (tryCompile()) {
+                    println "✅ Current version compiles successfully"
+                    successFile.text = "Current version compiles successfully"
+                    return
+                }
+
+                String lastGoodCommit = null
+                String firstBadCommit = commits[0]
+
+                for (commit in commits) {
+                    println "Checking commit: ${commit.take(7)}..."
+
+                    cloneCommitToTempDir(commit, tempDir)
+
+                    if (tryCompileInTempDir(tempDir)) {
+                        lastGoodCommit = commit
+                        println "✅ Working version was found: ${commit.take(7)}"
+                        break
+                    }
+                }
+
+                if (lastGoodCommit) {
+                    def diff = getGitDiff(lastGoodCommit, firstBadCommit)
+                    diffFile.text = diff
+                    successFile.text = """
+                    |Last working version: $lastGoodCommit
+                    |First non-working version: $firstBadCommit
+                    |Diff was saved in: ${diffFile}
+                    """.stripMargin()
+
+                    println "Diff was saved in: ${diffFile}"
+                    println "Results were saved in: ${successFile}"
+                } else {
+                    throw new GradleException("None of working dirs were found...")
+                }
+            } finally {
+                deleteTempDir(tempDir)
+            }
+        } catch (Exception e) {
+            throw new GradleException("Error with handling history task: ${e.message}")
+        }
+    }
+}
+
+def tryCompile() {
+    try {
+        exec {
+            commandLine './gradlew', 'myCompile', '--quiet', '--no-configuration-cache'
+            standardOutput = System.out
+            errorOutput = System.err
+        }
+        return true
+    } catch (Exception e) {
+        return false
+    }
+}
+
+def tryCompileInTempDir(File dir) {
+    try {
+        exec {
+            workingDir dir
+            commandLine './gradlew', 'myCompile', '--quiet', '--no-configuration-cache'
+            standardOutput = System.out
+            errorOutput = System.err
+        }
+        return true
+    } catch (Exception e) {
+        return false
+    }
+}
+
+def getGitHistory() {
+    def output = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-list', '--reverse', 'HEAD'
+        standardOutput = output
+    }
+    return output.toString().split('\n').toList()
+}
+
+def getCurrentGitBranch() {
+    def output = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'branch', '--show-current'
+        standardOutput = output
+    }
+    return output.toString().trim()
+}
+
+def cloneCommitToTempDir(String commit, File tempDir) {
+    deleteTempDir(tempDir)
+    tempDir.mkdirs()
+
+    exec {
+        workingDir tempDir
+        commandLine 'git', 'clone', file('.').absolutePath, '.'
+    }
+
+    exec {
+        workingDir tempDir
+        commandLine 'git', 'checkout', commit
+    }
+}
+
+def deleteTempDir(File tempDir) {
+    if (tempDir.exists()) {
+        delete {
+            delete tempDir
+        }
+    }
+}
+
+def getGitDiff(String commit1, String commit2) {
+    def output = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'diff', "${commit1}..${commit2}"
+        standardOutput = output
+    }
+    return output.toString()
+}
+
+// task diff
+tasks.register('diff') {
+    group = 'Version Control'
+    description = 'Auto commit for protected changes'
+
+    dependsOn 'processResources'
+
+    def configFile = file('src/main/resources/diff-config.properties')
+    def allowedChangesFile = file('allowed-changes.txt')
+
+    doLast {
+        println "Examining changes in working dir..."
+
+        if (!file('.git').exists()) {
+            throw new GradleException("Current dir isn't a git repo")
+        }
+
+        if (!configFile.exists()) {
+            createDefaultConfig(configFile)
+            println "Default config file was created: ${configFile}"
+        }
+
+        def protectedPaths = loadProtectedPaths(configFile)
+        println "Protected paths: ${protectedPaths.join(', ')}"
+
+        def changedFiles = getChangedFiles()
+        if (changedFiles.empty) {
+            println "No changes for commit"
+
+            return
+        }
+
+        if (hasProtectedChanges(changedFiles, protectedPaths)) {
+            println "Some changes in protected files were detected"
+            println "Changed files:\n${changedFiles.join('\n')}"
+            throw new GradleException("Commit was blocked: changes in protected classes")
+        }
+
+        commitChanges(allowedChangesFile)
+    }
+}
+
+def createDefaultConfig(File configFile) {
+    configFile.parentFile.mkdirs()
+    configFile.text = """// Clearing current dir...
+    protected.paths=src/main/java/ru/melon_egoist/auth/,src/main/java/ru/melon_egoist/graph
+    ignore.tests=true
+    """.stripIndent().trim()
+}
+
+def loadProtectedPaths(File configFile) {
+    def props = new Properties()
+    configFile.withInputStream { props.load(it) }
+
+    def paths = props.getProperty('protected.paths', '')
+            .split(',')
+            .collect { it.trim() }
+            .findAll { it }
+
+    if (props.getProperty('ignore.tests', 'true').toBoolean()) {
+        paths += 'src/test/'
+    }
+
+    return paths
+}
+
+def getChangedFiles() {
+    def output = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'diff', '--name-only', 'HEAD'
+        standardOutput = output
+    }
+    return output.toString().split('\n').findAll { it }.collect { it.trim() }
+}
+
+def hasProtectedChanges(List<String> changedFiles, List<String> protectedPaths) {
+    return changedFiles.any { file ->
+        protectedPaths.any { path ->
+            file.contains(path)
+        }
+    }
+}
+
+def commitChanges(File messageFile) {
+    exec { commandLine 'git', 'add', '.' }
+
+    def message = messageFile.exists() ?
+            messageFile.text.trim() :
+            "Autocommit: " + new Date().toString()
+
+    exec {
+        commandLine 'git', 'commit', '-m', message
+        ignoreExitValue = true
+    }
+
+    println "Commit done: ${message}"
+}
+
+
+// task myTest
+tasks.register('myTest', Test) {
+    group = 'Verification'
+    description = 'Alt variation of default test task'
+
+    dependsOn 'myBuild'
+    mustRunAfter 'myBuild'
+
+    useJUnitPlatform()
+
+    ignoreFailures = true
+
+    reports {
+        html.outputLocation = file("${buildDir}/reports/my-tests")
+        junitXml.outputLocation = file("${buildDir}/test-results/my-tests")
+    }
+
+    filter {
+        includeTestsMatching "*Test"
+    }
+
+    doLast {
+        def resultsDir = file("${buildDir}/test-results/my-tests")
+        def resultFiles = fileTree(resultsDir).matching {
+            include "**/*.xml"
+        }
+
+        int total = 0, failed = 0, skipped = 0
+
+        resultFiles.each { file ->
+            def testSuite = new XmlSlurper().parse(file)
+
+            total += (testSuite.@tests.text() ?: "0").toInteger()
+            failed += ((testSuite.@failures.text() ?: "0").toInteger()
+                    + (testSuite.@errors.text() ?: "0").toInteger())
+            skipped += (testSuite.@skipped.text() ?: "0").toInteger()
+        }
+
+        int passed = total - failed - skipped
+
+        println "\nTests results:"
+        println "Tests completed: ${passed}"
+        println "Tests failed: ${failed}"
+        println "Tests skipped: ${skipped}"
+        println "Report: ${file("${buildDir}/reports/my-tests/index.html").toURI()}"
+
+        if (failed > 0) {
+            println "Build has some failures!"
+        } else {
+            println "✅All tests were done successfully!"
+        }
+    }
+}
+
+
+// task report
+tasks.register('report') {
+    group = 'verification'
+    description = 'Run tests, save junit report, add it to git and commit.'
+
+    dependsOn myTest
+
+    doLast {
+        def reportDir = file("${buildDir}/test-results/test")
+
+        exec {
+            commandLine 'git', 'add', "${reportDir.absolutePath}"
+        }
+
+        exec {
+            commandLine 'git', 'commit', '-m', '"Add junit test report"'
+            ignoreExitValue = true
+        }
+    }
+}
+

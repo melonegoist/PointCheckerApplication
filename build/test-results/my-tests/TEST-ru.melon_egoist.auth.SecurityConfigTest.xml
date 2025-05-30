@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ru.melon_egoist.auth.SecurityConfigTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2025-05-30T12:19:54.882Z" hostname="melon-egoist-IdeaPad-5-Pro-16ACH6" time="0.013">
+  <properties/>
+  <testcase name="securityFilterChain_isLoaded()" classname="ru.melon_egoist.auth.SecurityConfigTest" time="0.007"/>
+  <testcase name="authenticationManager_isLoaded()" classname="ru.melon_egoist.auth.SecurityConfigTest" time="0.002"/>
+  <testcase name="passwordEncoder_isBCrypt()" classname="ru.melon_egoist.auth.SecurityConfigTest" time="0.002"/>
+  <system-out><![CDATA[15:19:51.858 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [ru.melon_egoist.auth.SecurityConfigTest]: SecurityConfigTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+15:19:51.967 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration ru.melon_egoist.Backend for test class ru.melon_egoist.auth.SecurityConfigTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.0)
+
+2025-05-30T15:19:52.289+03:00  INFO 70236 --- [    Test worker] r.melon_egoist.auth.SecurityConfigTest   : Starting SecurityConfigTest using Java 17.0.15 with PID 70236 (started by melon_egoist in /home/melon_egoist/Desktop/lab4WebNew/backend)
+2025-05-30T15:19:52.290+03:00  INFO 70236 --- [    Test worker] r.melon_egoist.auth.SecurityConfigTest   : No active profile set, falling back to 1 default profile: "default"
+2025-05-30T15:19:52.798+03:00  INFO 70236 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-05-30T15:19:52.844+03:00  INFO 70236 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 38 ms. Found 2 JPA repository interfaces.
+2025-05-30T15:19:53.168+03:00  INFO 70236 --- [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-05-30T15:19:53.208+03:00  INFO 70236 --- [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.3.1.Final
+2025-05-30T15:19:53.233+03:00  INFO 70236 --- [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-05-30T15:19:53.308+03:00  INFO 70236 --- [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-05-30T15:19:53.326+03:00  INFO 70236 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-05-30T15:19:53.553+03:00  INFO 70236 --- [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@43e30f15
+2025-05-30T15:19:53.555+03:00  INFO 70236 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-05-30T15:19:53.576+03:00  WARN 70236 --- [    Test worker] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-05-30T15:19:54.096+03:00  INFO 70236 --- [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-05-30T15:19:54.165+03:00  INFO 70236 --- [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-05-30T15:19:54.471+03:00  WARN 70236 --- [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-05-30T15:19:54.667+03:00  INFO 70236 --- [    Test worker] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@7b50e70a, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@4a0161ee, org.springframework.security.web.context.SecurityContextHolderFilter@18213a65, org.springframework.security.web.header.HeaderWriterFilter@6eaa5458, org.springframework.web.filter.CorsFilter@58192546, org.springframework.security.web.authentication.logout.LogoutFilter@5f386009, ru.melon_egoist.auth.JwtRequestFilter@39d62e47, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@1435a8ca, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@781befe7, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@18be7f57, org.springframework.security.web.session.SessionManagementFilter@97e9568, org.springframework.security.web.access.ExceptionTranslationFilter@21298c3a, org.springframework.security.web.access.intercept.AuthorizationFilter@bf32f3f]
+2025-05-30T15:19:54.870+03:00  INFO 70236 --- [    Test worker] r.melon_egoist.auth.SecurityConfigTest   : Started SecurityConfigTest in 2.789 seconds (process running for 4.836)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
