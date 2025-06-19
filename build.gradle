@@ -4,8 +4,6 @@ import javax.xml.parsers.SAXParserFactory
 import java.security.MessageDigest
 import groovy.xml.XmlSlurper
 
-
-
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.2.0'
@@ -875,3 +873,18 @@ tasks.register('report') {
     }
 }
 
+tasks.register('myRun') {
+    group = 'Running'
+    description = 'My Run task with custom build'
+
+    notCompatibleWithConfigurationCache("Build task doesn't support cache")
+
+    dependsOn 'myBuild'
+    mustRunAfter 'myBuild'
+
+    finalizedBy 'bootRun'
+
+    doLast {
+        println("Running successfully!")
+    }
+}
