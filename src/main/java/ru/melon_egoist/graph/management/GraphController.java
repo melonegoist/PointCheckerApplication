@@ -24,8 +24,11 @@ public class GraphController {
     @Autowired
     private CoordsRepository coordsRepository;
 
+    @Autowired
+    private PointCounter counter;
+
     @PostMapping("/graph")
-    public ResponseEntity<?> getCoordinates(@RequestBody Coords data) { // should be json
+    public ResponseEntity<?> getCoordinates(@RequestBody Coords data) {
         String x = data.getX();
         String y = data.getY();
         String r = data.getR();
@@ -33,14 +36,13 @@ public class GraphController {
         String owner = data.getOwner();
 
         // new from MBean
-        PointCounter counter = new PointCounter();
         counter.countNewPoint();
 
         GraphHandler handler = new GraphHandler(x, y, r);
         String responseValue = handler.inArea();
         
         // check if point is in area
-        if (responseValue.equals("false")) {
+        if (responseValue.equals("not in Area(")) {
             counter.countNewMissedPoint();
         }
 
