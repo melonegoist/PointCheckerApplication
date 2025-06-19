@@ -27,21 +27,20 @@ public class PointCounter implements CounterMBean{
 
     @Override
     @ManagedOperation
-    public void countNewPoint() {
+    public void countNewPoint(boolean isMissedPoint) {
         totalPoints++;
-        isLastMissedPoint = false;
-    }
 
-    @Override
-    @ManagedOperation
-    public void countNewMissedPoint() {
-        if (!isLastMissedPoint) {
+        if (isMissedPoint) {
             missedPoints++;
-            isLastMissedPoint = true;
+            if (isLastMissedPoint) {
+                sendNotification("You missed point twice in a row!");
+            } else {
+                isLastMissedPoint = true;
+            }
         } else {
-            sendNotification("You missed point twice in a row!");
             isLastMissedPoint = false;
         }
+
     }
 
     // TODO: move to separate class + update logic

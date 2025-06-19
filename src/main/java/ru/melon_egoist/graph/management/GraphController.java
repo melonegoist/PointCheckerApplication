@@ -35,16 +35,11 @@ public class GraphController {
 
         String owner = data.getOwner();
 
-        // new from MBean
-        counter.countNewPoint();
-
         GraphHandler handler = new GraphHandler(x, y, r);
         String responseValue = handler.inArea();
         
         // check if point is in area
-        if (responseValue.equals("not in Area(")) {
-            counter.countNewMissedPoint();
-        }
+        counter.countNewPoint(responseValue.equals("not in Area("));
 
         data.setInArea(responseValue);
 
