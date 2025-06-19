@@ -37,6 +37,7 @@ public class PointCounter implements CounterMBean{
             missedPoints++;
             isLastMissedPoint = true;
         } else {
+            //TODO: update link
             sendNotification("You missed point twice in a row!");
             isLastMissedPoint = false;
         }
