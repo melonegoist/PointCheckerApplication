@@ -1,5 +1,6 @@
 package ru.melon_egoist.management;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jmx.export.MBeanExporter;
@@ -22,10 +23,8 @@ public class JmxConfig {
     }
 
     @Bean
-    public PointCounter pointCounter() {
-        return new PointCounter();
-    }
+    public PointCounter pointCounter(MeterRegistry meterRegistry) { return new PointCounter(meterRegistry); }
 
     @Bean
-    public ClickerDetector clickerDetector() { return new ClickerDetector(); }
+    public ClickerDetector clickerDetector(MeterRegistry meterRegistry) { return new ClickerDetector(meterRegistry); }
 }

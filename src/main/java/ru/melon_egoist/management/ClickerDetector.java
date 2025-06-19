@@ -1,5 +1,8 @@
 package ru.melon_egoist.management;
 
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
@@ -12,8 +15,18 @@ import java.util.Queue;
 @ManagedResource(objectName = "ru.melon_egoist:type=ClickerDetector")
 public class ClickerDetector implements ClickerMBean {
 
+    private final MeterRegistry meterRegistry;
+
     private final Queue<Long> clickTimestamps = new LinkedList<>();
     private static final int MAX_HISTORY_SIZE = 100;
+
+    @Autowired
+    public ClickerDetector(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+
+        Gauge.builder("clicker.clickInterval", this, ClickerDetector::getClickInterval)
+                .register(meterRegistry);
+    }
 
     @Override
     @ManagedAttribute()
