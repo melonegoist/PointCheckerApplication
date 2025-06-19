@@ -8,6 +8,7 @@ import ru.melon_egoist.auth.UserRepository;
 import ru.melon_egoist.graph.classes.Coords;
 import ru.melon_egoist.graph.classes.GraphResponse;
 import ru.melon_egoist.graph.handlers.GraphHandler;
+import ru.melon_egoist.management.ClickerDetector;
 import ru.melon_egoist.management.PointCounter;
 
 import java.util.ArrayList;
@@ -27,8 +28,13 @@ public class GraphController {
     @Autowired
     private PointCounter counter;
 
+    @Autowired
+    private ClickerDetector clickerDetector;
+
     @PostMapping("/graph")
     public ResponseEntity<?> getCoordinates(@RequestBody Coords data) {
+        clickerDetector.registerClick();
+
         String x = data.getX();
         String y = data.getY();
         String r = data.getR();

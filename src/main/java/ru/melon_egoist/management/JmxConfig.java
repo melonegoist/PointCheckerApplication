@@ -10,11 +10,12 @@ import java.util.Map;
 @Configuration
 public class JmxConfig {
     @Bean
-    public MBeanExporter mBeanExporter(PointCounter pointCounter) {
+    public MBeanExporter mBeanExporter(PointCounter pointCounter, ClickerDetector clickerDetector) {
         MBeanExporter exporter = new MBeanExporter();
         Map<String, Object> beans = new HashMap<>();
 
         beans.put("ru.melon_egoist.management:type=PointCounter, description=PointCounter", pointCounter);
+        beans.put("ru.melon_egoist.management:type=ClickerDetector, description=ClickerDetector", clickerDetector);
         exporter.setBeans(beans);
 
         return exporter;
@@ -24,4 +25,7 @@ public class JmxConfig {
     public PointCounter pointCounter() {
         return new PointCounter();
     }
+
+    @Bean
+    public ClickerDetector clickerDetector() { return new ClickerDetector(); }
 }
