@@ -8,6 +8,7 @@ import ru.melon_egoist.auth.UserRepository;
 import ru.melon_egoist.graph.classes.Coords;
 import ru.melon_egoist.graph.classes.GraphResponse;
 import ru.melon_egoist.graph.handlers.GraphHandler;
+import ru.melon_egoist.management.PointCounter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,10 +32,17 @@ public class GraphController {
 
         String owner = data.getOwner();
 
+        // new from MBean
+        PointCounter counter = new PointCounter();
+        counter.countNewPoint();
 
         GraphHandler handler = new GraphHandler(x, y, r);
-
         String responseValue = handler.inArea();
+        
+        // check if point is in area
+        if (responseValue.equals("false")) {
+            counter.countNewMissedPoint();
+        }
 
         data.setInArea(responseValue);
 
