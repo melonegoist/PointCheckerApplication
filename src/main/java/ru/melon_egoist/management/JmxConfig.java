@@ -14,8 +14,7 @@ public class JmxConfig {
         MBeanExporter exporter = new MBeanExporter();
         Map<String, Object> beans = new HashMap<>();
 
-        //TODO: new link
-        beans.put("ru.melon_egoist.management:type=PointCounter", pointCounter);
+        beans.put("ru.melon_egoist.management:type=PointCounter, description=PointCounter", pointCounter);
         exporter.setBeans(beans);
 
         return exporter;

@@ -4,7 +4,7 @@ import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
 
-@ManagedResource(objectName = "")
+@ManagedResource(objectName = "ru.melon_egoist:type=PointCounter", description = "Point counter MBean")
 public class PointCounter implements CounterMBean{
 
     private int totalPoints = 0;
@@ -37,12 +37,12 @@ public class PointCounter implements CounterMBean{
             missedPoints++;
             isLastMissedPoint = true;
         } else {
-            //TODO: update link
             sendNotification("You missed point twice in a row!");
             isLastMissedPoint = false;
         }
     }
 
+    // TODO: move to separate class + update logic
     public void sendNotification(String message) {
         System.out.println(message);
     }
