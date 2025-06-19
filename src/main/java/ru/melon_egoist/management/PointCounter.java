@@ -5,8 +5,6 @@ import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.stereotype.Component;
 
-//
-
 @Component
 @ManagedResource(objectName = "ru.melon_egoist:type=PointCounter")
 public class PointCounter implements CounterMBean{
