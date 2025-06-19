@@ -40,13 +40,14 @@ public class GraphController {
         
         // check if point is in area
         counter.countNewPoint(responseValue.equals("not in Area("));
+        boolean notificationState = counter.getNotificationState();
 
         data.setInArea(responseValue);
 
         addCoords(data, owner);
 
         System.out.println("DONE");
-        return ResponseEntity.ok(new GraphResponse(x, y, r, responseValue));
+        return ResponseEntity.ok(new GraphResponse(x, y, r, responseValue, notificationState));
     }
 
     @GetMapping("/graph/dots")

@@ -13,6 +13,8 @@ public class PointCounter implements CounterMBean{
     private int missedPoints = 0;
     private boolean isLastMissedPoint = false;
 
+    private boolean needNotification = false;
+
     @Override
     @ManagedAttribute
     public int getTotalPoints() {
@@ -29,11 +31,14 @@ public class PointCounter implements CounterMBean{
     @ManagedOperation
     public void countNewPoint(boolean isMissedPoint) {
         totalPoints++;
+        needNotification = false;
 
         if (isMissedPoint) {
             missedPoints++;
             if (isLastMissedPoint) {
                 sendNotification("You missed point twice in a row!");
+                needNotification = true;
+
             } else {
                 isLastMissedPoint = true;
             }
@@ -44,7 +49,11 @@ public class PointCounter implements CounterMBean{
     }
 
     // TODO: move to separate class + update logic
-    public void sendNotification(String message) {
+    private void sendNotification(String message) {
         System.out.println(message);
+    }
+
+    public boolean getNotificationState() {
+        return needNotification;
     }
 }
