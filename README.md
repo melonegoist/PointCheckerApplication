@@ -2,3 +2,6 @@
 
 - prometheus
 - grafana
+
+- JConsole
+- VisualVM + MBean
