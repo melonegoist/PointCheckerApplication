@@ -1,4 +1,4 @@
-# Point Checker Application
+![after_click](https://github.com/user-attachments/assets/ddd16661-1838-483f-a69e-af43cc9f8c73)# Point Checker Application
 
 ## Описание проекта
 
@@ -65,6 +65,61 @@ Point Checker - это веб-приложение, позволяющее по�
 8. Валидация XML-файлов проекта
 9. Развертывание на удаленный сервер через SCP
 10. Поддержка автокоммитов
+
+## Скриншоты работы
+
+### Стартовая страница авторизации
+
+![Pasted image](https://github.com/user-attachments/assets/75f71310-f556-45c0-855d-05e5884d7632)
+
+### Попытка войти с неверными данными
+
+![wrong_username](https://github.com/user-attachments/assets/bcf9bdf1-295b-4d99-a8b9-0194fdd20914)
+
+### Страница регистрации
+
+![reg](https://github.com/user-attachments/assets/6a3be5e6-1bc0-4d2a-bebb-46d6e8be91f8)
+
+### Успешный вход в аккаунт
+
+![graph](https://github.com/user-attachments/assets/45c3d306-034f-45e2-9058-5461433262c1)
+
+### Попытка построить точку вне заданных границ
+
+![wrong_range](https://github.com/user-attachments/assets/79ad3f20-9540-4e71-a1f3-58fc885c91a4)
+
+### Попытка отправить форму с пустым полем
+
+![empty_field](https://github.com/user-attachments/assets/fe4d1558-164b-43e4-840a-630966adc762)
+
+### Попытка отправить форму с вводом букв
+
+![words_validation](https://github.com/user-attachments/assets/4e26f311-9184-4158-8407-b2cab75b5260)
+
+### Отрисовка графика при верном вводе
+
+![correct_graph](https://github.com/user-attachments/assets/58eded66-3bdb-4e7e-95e2-d3e00909bf05)
+
+### Отрисовка точки по вводу через форму
+
+![just_dot](https://github.com/user-attachments/assets/b3fea71e-bddf-45dd-9025-eae35391ec3a)
+
+### Отрисовка точки по клику
+
+![after_click2](https://github.com/user-attachments/assets/833db2b5-785f-47bb-9c28-be9a7b138c42)
+
+### Список точек пользователя
+
+![dots_list](https://github.com/user-attachments/assets/5de8794b-667c-482c-aa2f-e4185becfe61)
+
+### Графики метрик пользователя (количество точек, количество непопаданий, средний интервал между кликами)
+
+![metrics](https://github.com/user-attachments/assets/869f75f3-93cd-4256-83b1-223105e32f65)
+
+### Сгенерированный через Gradle JavaDoc
+
+![javadoc](https://github.com/user-attachments/assets/9e8d77d7-24ed-4e63-9fec-f328d97f50d1)
+
 
 ---
 Реализовано `melon_egoist`
