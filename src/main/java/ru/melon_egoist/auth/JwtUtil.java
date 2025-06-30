@@ -17,7 +17,7 @@ import java.util.function.Function;
 public class JwtUtil {
 
     @Value("${jwt.secret}")
-    String SECRET_KEY; // should be const from prop
+    String SECRET_KEY;
 
     @Value("${jwt.expiration}")
     int EXPIRATION_TIME;
@@ -58,7 +58,7 @@ public class JwtUtil {
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // from prop too
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY).compact();
     }
 

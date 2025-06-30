@@ -64,7 +64,6 @@ public class PointCounter implements CounterMBean{
 
     }
 
-    // TODO: move to separate class + update logic
     private void sendNotification(String message) {
         System.out.println(message);
     }
