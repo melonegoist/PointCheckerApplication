@@ -1,4 +1,0 @@
-Manifest-Version: 1.0
-Main-Class: ru.melon_egoist.Backend
-Created-By: Gradle Custom Build
-

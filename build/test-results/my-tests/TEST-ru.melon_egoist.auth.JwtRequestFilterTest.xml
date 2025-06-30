@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="ru.melon_egoist.auth.JwtRequestFilterTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2025-05-30T12:19:51.458Z" hostname="melon-egoist-IdeaPad-5-Pro-16ACH6" time="0.261">
-  <properties/>
-  <testcase name="doFilterInternal_noAuthorizationHeader_noAuthenticationSet()" classname="ru.melon_egoist.auth.JwtRequestFilterTest" time="0.239"/>
-  <testcase name="doFilterInternal_validToken_authenticationSet()" classname="ru.melon_egoist.auth.JwtRequestFilterTest" time="0.014"/>
-  <testcase name="doFilterInternal_invalidToken_noAuthenticationSet()" classname="ru.melon_egoist.auth.JwtRequestFilterTest" time="0.003"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

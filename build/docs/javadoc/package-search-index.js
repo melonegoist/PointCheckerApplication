@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"ru.melon_egoist"},{"l":"ru.melon_egoist.auth"},{"l":"ru.melon_egoist.auth.registration"},{"l":"ru.melon_egoist.graph.classes"},{"l":"ru.melon_egoist.graph.handlers"},{"l":"ru.melon_egoist.graph.management"},{"l":"ru.melon_egoist.management"}];updateSearchResults();
